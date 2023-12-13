@@ -1,105 +1,119 @@
 import React, { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Button, Table, Icon } from 'semantic-ui-react';
+import { Button, Icon, Modal } from 'semantic-ui-react';
 import 'semantic-ui-css/semantic.min.css';
 import axios from 'axios';
+import UserProfile from './UserProfile';
 
 function UserPage() {
   const [file, setFile] = useState(null);
   const [userInfo, setUserInfo] = useState(null);
+  const [modalOpen, setModalOpen] = useState(false);
+  const [isEditing, setIsEditing] = useState(false);
   const navigate = useNavigate();
+  const newip = 'http://10.0.0.79:5000/management';
+  const token = localStorage.getItem("userToken");
+  const uid = localStorage.getItem("uid");
+  const isAdmin = localStorage.getItem("isAdmin")
+  console.log(token)
+  console.log('hello')
 
-  const fetchData = async () => {
+
+
+  const fetchUserInfo = async () => {
+    const token = localStorage.getItem("userToken");
+    const uid = localStorage.getItem("uid");
+    console.log(`in fetch ${token}`)
+    if (!token || !uid) return; // Ensure token and uid are available
+  
+    const isAdmin = localStorage.getItem("isAdmin") === 'true';
+    let url = isAdmin ? `${newip}/user/admin/all` : `${newip}/user/candidate/${uid}`;
     try {
-      const token = localStorage.getItem("userToken");
-      const response = await axios.get('your-backend-endpoint/user-info', {
-        headers: {
-          'Authorization': `Bearer ${token}`
-        }
-      });
-      setUserInfo(response.data);
+      const response = await axios.get(url, { headers: { 'auth': token } });
+      setUserInfo(isAdmin ? response.data[0] : response.data);
     } catch (error) {
-      console.log(error.message);
+      console.error('Error fetching data:', error);
     }
   };
+  
 
   useEffect(() => {
-    fetchData();
-  }, []);
+    fetchUserInfo();
+  }, [navigate]);
 
   const handleFileChange = (e) => setFile(e.target.files[0]);
 
   const handleFileUpload = async () => {
-    if (!file) return;
-    const formData = new FormData();
-    formData.append('file', file);
+    // Logic for file upload
+  };
+
+  const handleOpenUserInfo = () => setModalOpen(true);
+
+  const handleCloseModal = () => {
+    setIsEditing(false);
+    setModalOpen(false);
+  };
+
+  const handleEditToggle = () => {
+    setIsEditing(!isEditing);
+  };
+  
+
+  const handleUserProfileUpdate = async (updatedUserInfo) => {
+    setUserInfo(updatedUserInfo);
+    if (!updatedUserInfo) return;
     try {
+      const uid = localStorage.getItem("uid");
       const token = localStorage.getItem("userToken");
-      await axios.post('your-backend-endpoint/upload', formData, {
-        headers: {
-          'Authorization': `Bearer ${token}`,
-          'Content-Type': 'multipart/form-data'
-        }
+      await axios.put(`http://10.0.0.79:5000/management/user/candidate/${uid}`, updatedUserInfo, {
+        headers: { 'auth': token }
       });
-      fetchData(); // Fetch the updated list
+      console.log("User profile updated successfully");
+      await fetchUserInfo(); // Re-fetch user info
     } catch (error) {
-      console.log(error.message);
+      console.error("Error updating user profile:", error);
     }
   };
 
-  const handleDeleteFile = async (fileName) => {
-    try {
-      const token = localStorage.getItem("userToken");
-      await axios.delete(`your-backend-endpoint/delete/${fileName}`, {
-        headers: {
-          'Authorization': `Bearer ${token}`
-        }
-      });
-      fetchData(); // Fetch the updated list after deletion
-    } catch (error) {
-      console.log(error.message);
-    }
-  };
-  
   const handleLogout = () => {
     localStorage.removeItem('userToken');
+    localStorage.removeItem('uid');
     navigate('/');
   };
 
   return (
     <div>
-      <Button onClick={handleLogout}>Logout</Button>
-      <input type="file" onChange={handleFileChange} />
-      <Button onClick={handleFileUpload} primary>Upload File</Button>
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '10px', width: '100vw' }}>
+        <div style={{ display: 'flex', alignItems: 'center', fontSize: '1.2em' }}>
+          <Icon name="user circle" />
+          <strong>User: {userInfo && userInfo.candidateName}</strong>
+          <Button style={{ marginLeft: '20px' }} onClick={handleOpenUserInfo}>Profile</Button>
+        </div>
+        <div>
+          <input type="file" style={{ marginRight: '20px' }} onChange={handleFileChange} />
+          <Button onClick={handleFileUpload} primary>Upload File</Button>
+          <Button onClick={handleLogout} style={{ marginLeft: '20px' }}>Logout</Button>
+        </div>
+      </div>
 
-      <Table celled>
-        <Table.Header>
-          <Table.Row>
-            <Table.HeaderCell>Filename</Table.HeaderCell>
-            <Table.HeaderCell>Actions</Table.HeaderCell>
-          </Table.Row>
-        </Table.Header>
-        <Table.Body>
-          {userInfo && userInfo.files ? (
-            userInfo.files.map((file, index) => (
-              <Table.Row key={index}>
-                <Table.Cell>{file.name}</Table.Cell>
-                <Table.Cell>
-                <Button icon as="a" href={file.url} download>
-                  <Icon name='download' />
-                </Button>
-                  <Button icon onClick={() => handleDeleteFile(file.name)}><Icon name='delete' /></Button>
-                </Table.Cell>
-              </Table.Row>
-            ))
-          ) : (
-            <Table.Row>
-              <Table.Cell>No files available</Table.Cell>
-              <Table.Cell></Table.Cell>
-            </Table.Row>
+      <Modal open={modalOpen} onClose={handleCloseModal} closeOnDimmerClick={false}>
+        <Modal.Header>User Profile</Modal.Header>
+        <Modal.Content>
+          {userInfo && (
+            <UserProfile 
+              userInfo={userInfo} 
+              onUpdate={handleUserProfileUpdate} 
+              isEditing={isEditing}
+            />
           )}
-        </Table.Body>
-      </Table>
+        </Modal.Content>
+        <Modal.Actions>
+          <Button onClick={handleEditToggle} color={isEditing ? 'blue' : null}>
+            {isEditing ? 'Save' : 'Edit'}
+          </Button>
+          <Button onClick={handleCloseModal}>Close</Button>
+        </Modal.Actions>
+      </Modal>
     </div>
   );
 }
