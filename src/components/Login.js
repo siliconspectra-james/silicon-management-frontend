@@ -1,23 +1,42 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Button, Form, Grid, Header, Segment } from 'semantic-ui-react';
 import 'semantic-ui-css/semantic.min.css';
+import { useAuth } from './AuthContext';
 import axios from 'axios';
+import {jwtDecode} from 'jwt-decode'; // Import jwt-decode
+
 
 function Login() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
+  const { authState, setAuthInfo } = useAuth();
   const navigate = useNavigate();
+  
+  useEffect(() => {
+    console.log("Login Mounted. Auth state:", authState.isAuthenticated);
+    // Temporary removal of auto-redirect logic for testing
+  }, [authState]);
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    setError(''); // Reset error message
+    setError('');
     try {
-      // Send credentials to backend
-      const response = await axios.post('your-backend-endpoint/login', { email, password });
-      localStorage.setItem("userToken", response.data.token); // Store the token returned by backend
-      navigate('/user');
+      const response = await axios.post('https://identitytoolkit.googleapis.com/v1/accounts:signInWithPassword?key=AIzaSyBdv7pXR1-C5G_Rk9XACk33lMii0fuCf9Y', { email, password, returnSecureToken: true });
+      console.log('login: ', response.data);
+
+      localStorage.setItem("userToken", response.data.idToken);
+      localStorage.setItem("uid", response.data.localId);
+      console.log(response.data.idToken)
+      console.log(response.data.localId)
+      // Decode the idToken
+      const decodedToken = jwtDecode(response.data.idToken);
+      const isAdmin = decodedToken?.admin == true;
+      localStorage.setItem('isAdmin', isAdmin)
+      console.log(response.data.isAdmin)
+      setAuthInfo({ isAdmin: decodedToken?.admin == true });
+      navigate('/user', { replace: true });
     } catch (error) {
       setError('Login failed. Invalid email or password.');
     }
