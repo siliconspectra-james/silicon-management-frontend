@@ -4,19 +4,31 @@ import { Menu, Segment, Container } from 'semantic-ui-react';
 import Home from './Home';
 import UserProfile from './UserProfile';
 import UserFile from './UserFile';
+import { useAuth } from '../AuthContext';
 
 function MainContent() {
     const [activeItem, setActiveItem] = useState('home');
+    
     const navigate = useNavigate();
+    const { logout } = useAuth();
 
     const handleItemClick = (e, { name }) => setActiveItem(name);
+   
     const handleLogout = () => {
+        logout();
+        // Clear additional localStorage items
         localStorage.removeItem("userToken");
         localStorage.removeItem("uid");
         localStorage.removeItem("isAdmin");
-        navigate('/login',{ replace: true });
-        window.location.reload();
-    };
+        localStorage.removeItem('selectedUserId');
+      
+        // Use setTimeout to delay navigation slightly
+        setTimeout(() => {
+          navigate('/login', { replace: true });
+        }, 100);
+      };
+      
+      
 
     const renderContent = () => {
         switch (activeItem) {

@@ -1,34 +1,40 @@
-// App.js
-import React, { useState, useEffect } from 'react';
-import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
-import MainContent from './components/MainContent';
-import AdminMainContent from './components/AdminMainContent';
+import React from 'react';
+import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
+import { AuthProvider,useAuth } from './components/AuthContext';
+import MainContent from './components/user/MainContent';
+import AdminMainContent from './components/admin/AdminMainContent';
 import Login from './components/Login';
-import 'semantic-ui-css/semantic.min.css';
 
 function App() {
-  const [isAdmin, setIsAdmin] = useState(localStorage.getItem("isAdmin") === 'true');
-
-  useEffect(() => {
-    const handleStorageChange = () => {
-      setIsAdmin(localStorage.getItem("isAdmin") === 'true');
-    };
-
-    window.addEventListener('storage', handleStorageChange);
-
-    return () => {
-      window.removeEventListener('storage', handleStorageChange);
-    };
-  }, []);
-
   return (
-    <Router>
-      <Routes>
-        <Route path="/login" element={<Login />} />
-        <Route path="/*" element={isAdmin ? <AdminMainContent /> : <MainContent />} />
-      </Routes>
-    </Router>
+    <AuthProvider>
+      <Router>
+        <Routes>
+          <Route path="/login" element={<Login />} />
+          <Route path="/*" element={<ProtectedRoute />} />
+        </Routes>
+      </Router>
+    </AuthProvider>
   );
 }
+
+const ProtectedRoute = () => {
+  const { authState, isAuthStateLoaded } = useAuth();
+
+  if (!isAuthStateLoaded) {
+    return <div>Loading...</div>; // Or any other loading indicator
+  }
+
+  if (!authState.isAuthenticated) {
+    return <Navigate to="/login" replace />;
+  }
+
+  return authState.isAdmin ? <AdminMainContent /> : <MainContent />;
+};
+
+
+
+
+
 
 export default App;

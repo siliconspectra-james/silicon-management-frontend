@@ -4,23 +4,50 @@ import { Menu, Segment, Container } from 'semantic-ui-react';
 import AdminHome from './AdminHome';
 import AdminUserList from './AdminUserList';
 import AdminRegister from './AdminRegister';
-import UserProfile from './UserProfile';
-import UserFile from './UserFile';
-import Home from './Home'
+import AdminUserFile from '../adminToUser/AdminUserFile';
+import AdminUserProfile from '../adminToUser/AdminUserProfile';
+import AdminUserHome from '../adminToUser/AdminUserHome';
+import { useAuth } from '../AuthContext';
 
 function AdminMainContent() {
-    const [activeItem, setActiveItem] = useState('adminHome');
-    const [selectedUser, setSelectedUser] = useState(null);
+    const storedUserId = localStorage.getItem('selectedUserId');
+    const initialActiveItem = storedUserId ? 'userHome' : 'adminHome';
+    const [activeItem, setActiveItem] = useState(initialActiveItem);
+    const [selectedUser, setSelectedUser] = useState(() => {
+        const storedUserId = localStorage.getItem('selectedUserId');
+        return storedUserId ? { userId: storedUserId } : null;
+    });
     const navigate = useNavigate();
+    const { logout } = useAuth();
 
     const handleItemClick = (e, { name }) => setActiveItem(name);
 
     const handleLogout = () => {
+        logout();
+        // Clear additional localStorage items
         localStorage.removeItem("userToken");
         localStorage.removeItem("uid");
         localStorage.removeItem("isAdmin");
-        navigate('/login',{ replace: true });
-        window.location.reload();
+        localStorage.removeItem('selectedUserId');
+      
+        // Use setTimeout to delay navigation slightly
+        setTimeout(() => {
+          navigate('/login', { replace: true });
+        }, 100);
+      };
+      
+      
+
+    const handleUserSelect = (user) => {
+        setSelectedUser(user);
+        localStorage.setItem('selectedUserId', user.userId);
+        setActiveItem('userProfile'); // Or any other item you want to navigate to
+    };
+
+    const handleBackToAdminHome = () => {
+        setSelectedUser(null);
+        localStorage.removeItem('selectedUserId'); // Clear selected user ID
+        setActiveItem('adminHome');
     };
 
     const renderMenuItems = () => {
@@ -36,7 +63,7 @@ function AdminMainContent() {
                     <Menu.Item name='userFiles' active={activeItem === 'userFiles'} onClick={() => setActiveItem('userFiles')}>
                         Files
                     </Menu.Item>
-                    <Menu.Item name='backToAdminHome' onClick={() => { setSelectedUser(null); setActiveItem('adminHome'); }}>
+                    <Menu.Item name='backToAdminHome' onClick={handleBackToAdminHome}>
                         Back to Admin Home
                     </Menu.Item>
                 </>
@@ -45,8 +72,8 @@ function AdminMainContent() {
             return (
                 <>
                     <Menu.Item name='adminHome' active={activeItem === 'adminHome'} onClick={handleItemClick} />
-                    <Menu.Item name='userList' active={activeItem === 'userList'} onClick={handleItemClick} > Users</Menu.Item>
-                    <Menu.Item name='registerNewUser' active={activeItem === 'registerNewUser'} onClick={handleItemClick} />
+                    <Menu.Item name='userList' active={activeItem === 'userList'} onClick={handleItemClick}>Users</Menu.Item>
+                    <Menu.Item name='registerNewUser' active={activeItem === 'registerNewUser'} onClick={handleItemClick}>Register New User</Menu.Item>
                 </>
             );
         }
@@ -56,11 +83,11 @@ function AdminMainContent() {
         if (selectedUser) {
             switch (activeItem) {
                 case 'userHome':
-                    return <Home  user={selectedUser} />;
+                    return <AdminUserHome />;
                 case 'userProfile':
-                    return <UserProfile user={selectedUser} />;
+                    return <AdminUserProfile />;
                 case 'userFiles':
-                    return <UserFile user={selectedUser} />;
+                    return <AdminUserFile />;
                 default:
                     return <div>Select a menu item</div>;
             }
@@ -69,7 +96,7 @@ function AdminMainContent() {
                 case 'adminHome':
                     return <AdminHome />;
                 case 'userList':
-                    return <AdminUserList onUserSelect={(user) => { setSelectedUser(user); setActiveItem('userHome'); }} />;
+                    return <AdminUserList onUserSelect={handleUserSelect} />;
                 case 'registerNewUser':
                     return <AdminRegister />;
                 default:
@@ -77,6 +104,7 @@ function AdminMainContent() {
             }
         }
     };
+    
 
     return (
         <div style={{ display: 'flex', flexDirection: 'column', height: '100vh', backgroundColor: '#f0f0f0' }}>

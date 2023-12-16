@@ -12,7 +12,7 @@ function UserProfile() {
   const newip = 'http://10.0.0.79:5000/management';
 
 
-  useEffect(() => {
+  useEffect(()   => {
     const fetchUserInfo = async () => {
       setIsLoading(true);
       setError(null);

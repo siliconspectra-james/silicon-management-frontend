@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { Loader, List, Input } from 'semantic-ui-react';
 import axios from 'axios';
 
-function AdminUserList({onUserSelect}) {
+function AdminUserList({ onUserSelect }) {
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState(null);
   const [candidateList, setCandidateList] = useState([]);
@@ -23,14 +23,14 @@ function AdminUserList({onUserSelect}) {
       }
 
       try {
-        const response = await axios.get(`${newip}/user/admin/all`, { headers: { 'auth': token } });
-        const candidates = Object.values(response.data);
-        setCandidateList(candidates);
+        const response = await axios.get(`${newip}/user/admin/all/users`, { headers: { 'auth': token } });
+        setCandidateList(response.data); // Assuming the data is an array of user objects
+        console.log('candidate list data: ',response.data)
       } catch (error) {
-        console.error('Error fetching data:', error);
         setError('Failed to load candidate data');
+      } finally {
+        setIsLoading(false);
       }
-      setIsLoading(false);
     };
 
     fetchCandidates();
@@ -41,11 +41,16 @@ function AdminUserList({onUserSelect}) {
   };
 
   const filteredCandidates = candidateList.filter(candidate => {
-    return candidate.candidateName && candidate.candidateName.toLowerCase().includes(searchTerm.toLowerCase());
+    // Convert any non-null value to a string before calling toLowerCase
+    const userName = candidate.userName ? candidate.userName.toString().toLowerCase() : '';
+    return userName.includes(searchTerm.toLowerCase());
   });
+  
+  
 
   const handleCandidateClick = (candidate) => {
-    onUserSelect(candidate);
+    localStorage.setItem('selectedUserId', candidate.userId); // Store the user's ID
+    onUserSelect(candidate); // Pass the entire candidate object
   };
 
   if (isLoading) {
@@ -68,10 +73,10 @@ function AdminUserList({onUserSelect}) {
         />
       </div>
       <List>
-        {filteredCandidates.map((candidate, index) => (
-          <List.Item key={index} onClick={() => handleCandidateClick(candidate)}>
+        {filteredCandidates.map(candidate => (
+          <List.Item key={candidate.userId} onClick={() => handleCandidateClick(candidate)}>
             <List.Content>
-              <List.Header as="a" style={{marginBottom:'20px'}}>{candidate.candidateName}</List.Header>
+              <List.Header as="a">{candidate.userName}</List.Header>
               {/* Other candidate details can be added here */}
             </List.Content>
           </List.Item>
