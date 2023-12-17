@@ -9,7 +9,7 @@ function UserProfile() {
   const [isEditing, setIsEditing] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState(null);
-  const newip = 'http://10.0.0.79:5000/management';
+  const apiEndpoint = process.env.REACT_APP_API_URL
 
 
   useEffect(()   => {
@@ -23,7 +23,7 @@ function UserProfile() {
         return;
       }
       const isAdmin = localStorage.getItem("isAdmin") === 'true';
-      let url = isAdmin ? `${newip}/user/admin/all` : `${newip}/user/candidate/${uid}`;
+      let url = isAdmin ? `${apiEndpoint}/user/admin/all` : `${apiEndpoint}/user/candidate/${uid}`;
 
       try {
         const response = await axios.get(url, { headers: { 'auth': token } });
@@ -88,7 +88,7 @@ function UserProfile() {
     const uid = localStorage.getItem("uid");
     const token = localStorage.getItem("userToken");
     try {
-      await axios.put(`http://10.0.0.79:5000/management/user/candidate/${uid}`, editedUserInfo, {
+      await axios.put(`${apiEndpoint}/user/candidate/${uid}`, editedUserInfo, {
         headers: { 'auth': token }
       });
       console.log("User profile updated successfully");

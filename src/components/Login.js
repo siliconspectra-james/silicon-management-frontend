@@ -23,7 +23,8 @@ function Login() {
     e.preventDefault();
     setError('');
     try {
-      const response = await axios.post('https://identitytoolkit.googleapis.com/v1/accounts:signInWithPassword?key=AIzaSyBdv7pXR1-C5G_Rk9XACk33lMii0fuCf9Y', { email, password, returnSecureToken: true });
+      const firebaseApiKey = process.env.REACT_APP_FIREBASE_API_KEY;
+      const response = await axios.post(`https://identitytoolkit.googleapis.com/v1/accounts:signInWithPassword?key=${firebaseApiKey}`, { email, password, returnSecureToken: true });
       console.log('login: ', response.data);
 
       localStorage.setItem("userToken", response.data.idToken);
