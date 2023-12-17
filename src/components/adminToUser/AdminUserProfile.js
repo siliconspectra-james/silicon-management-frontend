@@ -9,7 +9,7 @@ function AdminUserProfile() {
   const [isEditing, setIsEditing] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState(null);
-  const newip = 'http://10.0.0.79:5000/management';
+  const apiEndpoint = process.env.REACT_APP_API_URL
 
   useEffect(() => {
     const fetchUserInfo = async () => {
@@ -24,7 +24,7 @@ function AdminUserProfile() {
       }
 
       try {
-        const endpoint = `${newip}/user/admin/${selectedUserId}`;
+        const endpoint = `${apiEndpoint}/user/admin/${selectedUserId}`;
         const response = await axios.get(endpoint, { headers: { 'auth': token } });
         let userInfoData = response.data;
         console.log(`what is ${response}`)
@@ -88,7 +88,7 @@ function AdminUserProfile() {
     if (!selectedUserId) return;
 
     try {
-      await axios.put(`${newip}/user/admin/${selectedUserId}`, editedUserInfo, {
+      await axios.put(`${apiEndpoint}/user/admin/${selectedUserId}`, editedUserInfo, {
         headers: { 'auth': token }
       });
       console.log("User profile updated successfully");
